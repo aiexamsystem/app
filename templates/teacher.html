@@ -1,0 +1,238 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>教师认证 - 智慧答题系统</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.2.3/css/bootstrap.min.css">
+    <link rel="stylesheet" crossorigin href="https://g.alicdn.com/aliyun-documentation/web-chatbot-ui/0.0.24/index.css" />
+    <style>
+        :root {
+            --primary-gradient: linear-gradient(135deg, #4A90E2 0%, #6C5CE7 100%);
+            --glass-bg: rgba(255, 255, 255, 0.96);
+        }
+
+        body {
+            background: var(--primary-gradient);
+            min-height: 100vh;
+            font-family: 'Segoe UI', system-ui, sans-serif;
+            position: relative;
+            overflow: hidden;
+        }
+
+        /* 动态光影层 */
+        .light-effect {
+            position: absolute;
+            width: 120%;
+            height: 120%;
+            background: radial-gradient(circle at 50% 50%, 
+                rgba(255,255,255,0.15) 0%, 
+                rgba(255,255,255,0) 60%);
+            animation: light-pulse 8s ease infinite;
+            pointer-events: none;
+        }
+
+        /* 登录卡片 */
+        .auth-card {
+            background: var(--glass-bg);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border-radius: 24px;
+            box-shadow: 0 20px 50px rgba(0, 0, 0, 0.15);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            overflow: hidden;
+            transition: transform 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+        }
+
+        .auth-card:hover {
+            transform: translateY(-5px);
+        }
+
+        .card-header {
+            background: rgba(255,255,255,0.1);
+            border-bottom: 1px solid rgba(255,255,255,0.2);
+            padding: 2rem;
+        }
+
+        h3 {
+            font-weight: 800;
+            background: var(--primary-gradient);
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+            letter-spacing: -0.03em;
+        }
+
+        /* 输入框特效 */
+        .form-control {
+            background: rgba(255,255,255,0.9);
+            border: 2px solid rgba(108, 92, 231, 0.2);
+            border-radius: 12px;
+            padding: 1rem;
+            transition: all 0.3s ease;
+        }
+
+        .form-control:focus {
+            box-shadow: 0 0 0 4px rgba(74, 144, 226, 0.2);
+            border-color: #4A90E2;
+        }
+
+        /* 按钮动画 */
+        .auth-btn {
+            padding: 0.8rem 2rem;
+            border-radius: 12px;
+            font-weight: 600;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            position: relative;
+            overflow: hidden;
+            border: none;
+        }
+
+        .auth-btn::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 200%;
+            height: 100%;
+            background: linear-gradient(
+                90deg,
+                rgba(255,255,255,0) 0%,
+                rgba(255,255,255,0.2) 50%,
+                rgba(255,255,255,0) 100%
+            );
+            transition: left 0.6s;
+        }
+
+        .auth-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(74, 144, 226, 0.3);
+        }
+
+        .auth-btn:hover::after {
+            left: 100%;
+        }
+
+        .btn-primary {
+            background: var(--primary-gradient);
+            color: white;
+        }
+
+        /* 提示消息 */
+        .alert-neon {
+            background: rgba(255, 88, 88, 0.9);
+            backdrop-filter: blur(8px);
+            -webkit-backdrop-filter: blur(8px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 12px;
+            color: white;
+        }
+
+        @keyframes light-pulse {
+            0% { transform: scale(0.95); opacity: 0.6; }
+            50% { transform: scale(1.05); opacity: 0.4; }
+            100% { transform: scale(0.95); opacity: 0.6; }
+        }
+
+        /* 移动端优化 */
+        @media (max-width: 768px) {
+            .auth-card {
+                margin: 1rem;
+            }
+            h3 {
+                font-size: 1.8rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="light-effect"></div>
+    
+    <div class="container mt-5">
+        <div class="row justify-content-center">
+            <div class="col-md-8 col-lg-6">
+                <div class="auth-card">
+                    <div class="card-header text-center">
+                        <h3>教师身份认证</h3>
+                    </div>
+                    <div class="card-body p-4">
+                        {% with messages = get_flashed_messages() %}
+                          {% if messages %}
+                            {% for message in messages %}
+                              <div class="alert alert-neon mb-4">{{ message }}</div>
+                            {% endfor %}
+                          {% endif %}
+                        {% endwith %}
+                        
+                        <form action="{{ url_for('teacher_login') }}" method="post">
+                            <div class="mb-4">
+                                <label for="password" class="form-label text-dark-80 mb-3">🔑 教学通行密码</label>
+                                <input 
+                                    type="password" 
+                                    class="form-control" 
+                                    id="password" 
+                                    name="password" 
+                                    required
+                                    placeholder="输入专属认证密码">
+                            </div>
+                            <div class="text-center mt-4">
+                                <button type="submit" class="auth-btn btn-primary px-5">进入管理平台</button>
+                                <a href="{{ url_for('index') }}" 
+                                   class="auth-btn btn-secondary px-5 ms-2"
+                                   style="background: rgba(255,255,255,0.9); color: #4A90E2;">
+                                    返回首页
+                                </a>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script type="module" crossorigin src="https://g.alicdn.com/aliyun-documentation/web-chatbot-ui/0.0.24/index.js"></script>
+    <script>
+      window.CHATBOT_CONFIG = {
+        endpoint: "/chat", // 可以替换为 https://{your-fc-http-trigger-domain}/chat
+        displayByDefault: false, // 默认不显示 AI 助手对话框
+        title: 'AI 助手', // 自定义 AI 助手标题
+        draggable: true, // 是否开启拖拽
+        aiChatOptions: { // 自定义取值参考：https://docs.nlkit.com/nlux/reference/ui/ai-chat#conversation-options
+          conversationOptions: { // 自定义取值参考：https://docs.nlkit.com/nlux/reference/ui/ai-chat#conversation-options
+            conversationStarters: [
+              {prompt: '我的多级认知能力水平如何?'},
+              {prompt: 'XX学生的多级认知能力水平怎么样?'},
+              {prompt: '“整体学生的多级认知能力水平如何?'},
+            ]
+          },
+          displayOptions: { // 自定义取值参考：https://docs.nlkit.com/nlux/reference/ui/ai-chat#display-options
+            height: 600,
+            // width: 400,
+          },
+          personaOptions: { // 自定义取值参考：https://docs.nlkit.com/nlux/reference/ui/ai-chat#chat-personas
+            assistant: {
+              name: '你好，我是你的 AI 助手',
+              // AI 助手的图标
+              avatar: 'https://img.alicdn.com/imgextra/i2/O1CN01Pda9nq1YDV0mnZ31H_!!6000000003025-54-tps-120-120.apng',
+              tagline: '您可以尝试点击下方的快捷入口开启体验！',
+            }
+          },
+          messageOptions: { // 自定义取值参考：https://docs.nlkit.com/nlux/reference/ui/ai-chat#message-options
+            waitTimeBeforeStreamCompletion: 'never'
+          }
+        },
+        dataProcessor: {
+          /**
+          * 在向后端大模型应用发起请求前改写 Prompt。
+          * 比如可以用于总结网页场景，在发送前将网页内容包含在内，同时避免在前端显示这些内容。
+          * @param {string} prompt - 用户输入的 Prompt
+          * @param {string}  - 改写后的 Prompt
+          */
+          rewritePrompt(prompt) {
+            return prompt;
+          }
+        }
+      };
+    </script>
+</body>
+</html>

@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>教师控制台 - 答题系统</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.2.3/css/bootstrap.min.css">
+    <link rel="stylesheet" crossorigin href="https://g.alicdn.com/aliyun-documentation/web-chatbot-ui/0.0.24/index.css" />
+</head>
+<body>
+    <script type="module" crossorigin src="https://g.alicdn.com/aliyun-documentation/web-chatbot-ui/0.0.24/index.js"></script>
+    <script>
+      window.CHATBOT_CONFIG = {
+        endpoint: "/chat", // 可以替换为 https://{your-fc-http-trigger-domain}/chat
+        displayByDefault: false, // 默认不显示 AI 助手对话框
+        title: 'AI 助手', // 自定义 AI 助手标题
+        draggable: true, // 是否开启拖拽
+        aiChatOptions: { // 自定义取值参考：https://docs.nlkit.com/nlux/reference/ui/ai-chat#conversation-options
+          conversationOptions: { // 自定义取值参考：https://docs.nlkit.com/nlux/reference/ui/ai-chat#conversation-options
+            conversationStarters: [
+              {prompt: '我的多级认知能力水平如何?'},
+              {prompt: 'XX学生的多级认知能力水平怎么样?'},
+              {prompt: '“整体学生的多级认知能力水平如何?'},
+            ]
+          },
+          displayOptions: { // 自定义取值参考：https://docs.nlkit.com/nlux/reference/ui/ai-chat#display-options
+            height: 600,
+            // width: 400,
+          },
+          personaOptions: { // 自定义取值参考：https://docs.nlkit.com/nlux/reference/ui/ai-chat#chat-personas
+            assistant: {
+              name: '你好，我是你的 AI 助手',
+              // AI 助手的图标
+              avatar: 'https://img.alicdn.com/imgextra/i2/O1CN01Pda9nq1YDV0mnZ31H_!!6000000003025-54-tps-120-120.apng',
+              tagline: '您可以尝试点击下方的快捷入口开启体验！',
+            }
+          },
+          messageOptions: { // 自定义取值参考：https://docs.nlkit.com/nlux/reference/ui/ai-chat#message-options
+            waitTimeBeforeStreamCompletion: 'never'
+          }
+        },
+        dataProcessor: {
+          /**
+          * 在向后端大模型应用发起请求前改写 Prompt。
+          * 比如可以用于总结网页场景，在发送前将网页内容包含在内，同时避免在前端显示这些内容。
+          * @param {string} prompt - 用户输入的 Prompt
+          * @param {string}  - 改写后的 Prompt
+          */
+          rewritePrompt(prompt) {
+            return prompt;
+          }
+        }
+      };
+    </script>
+    
+    
+    
+    <div class="container mt-4">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h1>教师控制台</h1>
+            <a href="{{ url_for('logout') }}" class="btn btn-danger">退出登录</a>
+        </div>
+        
+        {% with messages = get_flashed_messages() %}
+          {% if messages %}
+            {% for message in messages %}
+              <div class="alert alert-success">{{ message }}</div>
+            {% endfor %}
+          {% endif %}
+        {% endwith %}
+        
+        <ul class="nav nav-tabs" id="myTab" role="tablist">
+            <li class="nav-item" role="presentation">
+                <button class="nav-link active" id="add-tab" data-bs-toggle="tab" data-bs-target="#add" type="button" role="tab" aria-controls="add" aria-selected="true">添加题目</button>
+            </li>
+            <li class="nav-item" role="presentation">
+                <button class="nav-link" id="questions-tab" data-bs-toggle="tab" data-bs-target="#questions" type="button" role="tab" aria-controls="questions" aria-selected="false">题目列表</button>
+            </li>
+            <li class="nav-item" role="presentation">
+                <button class="nav-link" id="records-tab" data-bs-toggle="tab" data-bs-target="#records" type="button" role="tab" aria-controls="records" aria-selected="false">学生答题记录</button>
+            </li>
+        </ul>
+        
+        <div class="tab-content" id="myTabContent">
+            <div class="tab-pane fade show active" id="add" role="tabpanel" aria-labelledby="add-tab">
+                <div class="card mt-3">
+                    <div class="card-header">
+                        <h3>添加新题目</h3>
+                    </div>
+                    <div class="card-body">
+                        <form action="{{ url_for('add_question') }}" method="post" enctype="multipart/form-data">
+                            <div class="mb-3">
+                                <label for="question_content" class="form-label">题目内容</label>
+                                <textarea class="form-control" id="question_content" name="question_content" rows="5" required></textarea>
+                            </div>
+                            <div class="mb-3">
+                                <label for="question_image" class="form-label">题目图片 (可选)</label>
+                                <input class="form-control" type="file" id="question_image" name="question_image" accept="image/png">
+                                <div class="form-text">只接受PNG格式图片</div>
+                            </div>
+                            <div class="mb-3">
+                                <label for="question_video" class="form-label">题目视频 (可选)</label>
+                                <input class="form-control" type="file" id="question_video" name="question_video" accept="video/mp4,video/webm,video/ogg">
+                                <div class="form-text">支持MP4, WebM, Ogg格式视频</div>
+                            </div>
+                            <button type="submit" class="btn btn-primary">保存题目</button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="tab-pane fade" id="questions" role="tabpanel" aria-labelledby="questions-tab">
+                <div class="card mt-3">
+                    <div class="card-header">
+                        <h3>题目列表</h3>
+                    </div>
+                    <div class="card-body">
+                        {% if questions %}
+                            <div class="table-responsive">
+                                <table class="table table-striped">
+                                    <thead>
+                                        <tr>
+                                            <th>ID</th>
+                                            <th>题目内容</th>
+                                            <th>是否有图片</th>
+                                            <th>是否有视频</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {% for question in questions %}
+                                            <tr>
+                                                <td>{{ question.id }}</td>
+                                                <td>{{ question.content }}</td>
+                                                <td>{% if question.image %}有{% else %}无{% endif %}</td>
+                                                <td>{% if question.video %}有{% else %}无{% endif %}</td>
+                                            </tr>
+                                        {% endfor %}
+                                    </tbody>
+                                </table>
+                            </div>
+                        {% else %}
+                            <p class="text-center">目前没有题目</p>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+            
+            <div class="tab-pane fade" id="records" role="tabpanel" aria-labelledby="records-tab">
+                <div class="card mt-3">
+                    <div class="card-header">
+                        <h3>学生答题记录</h3>
+                    </div>
+                    <div class="card-body">
+                        {% if records %}
+                            <div class="table-responsive">
+                                <table class="table table-striped">
+                                    <thead>
+                                        <tr>
+                                            <th>时间</th>
+                                            <th>学生类型</th>
+                                            <th>得分</th>
+                                            <th>详情</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {% for record in records %}
+                                            <tr>
+                                                <td>{{ record.timestamp }}</td>
+                                                <td>{{ record.student_type }}</td>
+                                                <td>{{ record.score }}</td>
+                                                <td>
+                                                    <button class="btn btn-sm btn-info" type="button" data-bs-toggle="collapse" data-bs-target="#record{{ loop.index }}">
+                                                        查看详情
+                                                    </button>
+                                                    <div class="collapse mt-2" id="record{{ loop.index }}">
+                                                        <div class="card card-body">
+                                                            <h5>答题详情</h5>
+                                                            <ul class="list-group">
+                                                                {% for question in record.questions %}
+                                                                    <li class="list-group-item">
+                                                                        <strong>题目：</strong> {{ question.content }}
+                                                                        <br>
+                                                                        <strong>答案：</strong> {{ record.answers[question.id] or '未作答' }}
+                                                                    </li>
+                                                                {% endfor %}
+                                                            </ul>
+                                                        </div>
+                                                    </div>
+                                                </td>
+                                            </tr>
+                                        {% endfor %}
+                                    </tbody>
+                                </table>
+                            </div>
+                        {% else %}
+                            <p class="text-center">目前没有答题记录</p>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.2.3/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

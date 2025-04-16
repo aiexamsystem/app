@@ -1,0 +1,292 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>答题成果 - 智慧测评系统</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.2.3/css/bootstrap.min.css">
+    <link rel="stylesheet" crossorigin href="https://g.alicdn.com/aliyun-documentation/web-chatbot-ui/0.0.24/index.css" />
+    <style>
+        :root {
+            --primary-gradient: linear-gradient(135deg, #4A90E2 0%, #6C5CE7 100%);
+            --glass-bg: rgba(255, 255, 255, 0.96);
+        }
+
+        body {
+            background: var(--primary-gradient);
+            min-height: 100vh;
+            font-family: 'Segoe UI', system-ui, sans-serif;
+            position: relative;
+        }
+
+        /* 动态光晕层 */
+        .glow-layer {
+            position: fixed;
+            width: 120%;
+            height: 120%;
+            background: radial-gradient(circle at 50% 50%, 
+                rgba(255,255,255,0.15) 0%, 
+                rgba(255,255,255,0) 60%);
+            animation: glow-pulse 8s ease infinite;
+            pointer-events: none;
+        }
+
+        /* 主结果卡片 */
+        .result-card {
+            background: var(--glass-bg);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border-radius: 24px;
+            box-shadow: 0 20px 50px rgba(0, 0, 0, 0.15);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            overflow: hidden;
+            transition: transform 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+        }
+
+        .result-card:hover {
+            transform: translateY(-5px);
+        }
+
+        .card-header {
+            background: rgba(255,255,255,0.1);
+            border-bottom: 1px solid rgba(255,255,255,0.2);
+            padding: 2rem;
+        }
+
+        h3 {
+            font-weight: 800;
+            background: var(--primary-gradient);
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+            letter-spacing: -0.03em;
+        }
+
+        /* 成功提示 */
+        .success-alert {
+            background: rgba(76, 175, 80, 0.9);
+            backdrop-filter: blur(8px);
+            -webkit-backdrop-filter: blur(8px);
+            border: 1px solid rgba(255,255,255,0.3);
+            border-radius: 16px;
+            color: white;
+        }
+
+        /* 手风琴组件美化 */
+        .accordion-button {
+            background: rgba(255,255,255,0.9);
+            border-radius: 12px !important;
+            margin: 8px 0;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+            transition: all 0.3s ease;
+        }
+
+        .accordion-button:not(.collapsed) {
+            background: rgba(74, 144, 226, 0.1);
+            color: #4A90E2;
+        }
+
+        .accordion-button::after {
+            filter: brightness(0.5);
+        }
+
+        .accordion-body {
+            background: rgba(255,255,255,0.95);
+            border-radius: 0 0 12px 12px;
+        }
+
+        /* 题目内容样式 */
+        .question-content {
+            color: #2d3436;
+            font-size: 1.1em;
+            line-height: 1.6;
+        }
+
+        /* 图片样式 */
+        .result-image {
+            border-radius: 12px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+            transition: transform 0.3s ease;
+        }
+
+        .result-image:hover {
+            transform: scale(1.02);
+        }
+
+        /* 返回按钮 */
+        .home-btn {
+            background: var(--primary-gradient);
+            color: white;
+            padding: 1rem 2.5rem;
+            border-radius: 12px;
+            font-weight: 600;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            position: relative;
+            overflow: hidden;
+            border: none;
+        }
+
+        .home-btn::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 200%;
+            height: 100%;
+            background: linear-gradient(
+                90deg,
+                rgba(255,255,255,0) 0%,
+                rgba(255,255,255,0.2) 50%,
+                rgba(255,255,255,0) 100%
+            );
+            transition: left 0.6s;
+        }
+
+        .home-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(74, 144, 226, 0.3);
+        }
+
+        .home-btn:hover::after {
+            left: 100%;
+        }
+
+        @keyframes glow-pulse {
+            0% { transform: scale(0.95); opacity: 0.6; }
+            50% { transform: scale(1.05); opacity: 0.4; }
+            100% { transform: scale(0.95); opacity: 0.6; }
+        }
+
+        /* 移动端优化 */
+        @media (max-width: 768px) {
+            .result-card {
+                margin: 1rem;
+            }
+            h3 {
+                font-size: 1.8rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="glow-layer"></div>
+    
+    <div class="container mt-4">
+        <div class="row justify-content-center">
+            <div class="col-md-10 col-lg-8">
+                <div class="result-card">
+                    <div class="card-header text-center">
+                        <h3>📋 答题成果报告</h3>
+                    </div>
+                    <div class="card-body p-4">
+                        <div class="success-alert alert mb-4">
+                            <h4 class="d-flex align-items-center gap-2">
+                                <span>✅</span>
+                                答案提交成功！
+                            </h4>
+                            <p class="mb-0">您的答题记录已安全存储，教师可随时查阅评估</p>
+                        </div>
+                        
+                        <h5 class="mb-4 text-dark-80">📊 详细答题记录：</h5>
+                        
+                        <div class="accordion" id="answerAccordion">
+                            {% for question in questions %}
+                                <div class="accordion-item border-0">
+                                    <h2 class="accordion-header" id="heading{{ loop.index }}">
+                                        <button class="accordion-button collapsed fs-5" 
+                                                type="button" 
+                                                data-bs-toggle="collapse" 
+                                                data-bs-target="#collapse{{ loop.index }}" 
+                                                aria-expanded="false" 
+                                                aria-controls="collapse{{ loop.index }}">
+                                            📌 题目 {{ loop.index }}
+                                        </button>
+                                    </h2>
+                                    <div id="collapse{{ loop.index }}" 
+                                         class="accordion-collapse collapse" 
+                                         aria-labelledby="heading{{ loop.index }}" 
+                                         data-bs-parent="#answerAccordion">
+                                        <div class="accordion-body">
+                                            <p class="question-content">
+                                                <strong>🔍 题目内容：</strong> 
+                                                {{ question.content }}
+                                            </p>
+                                            
+                                            {% if question.image %}
+                                                <div class="text-center my-4">
+                                                    <img src="{{ url_for('static', filename=question.image) }}" 
+                                                         alt="题目图示" 
+                                                         class="result-img img-fluid">
+                                                </div>
+                                            {% endif %}
+                                            
+                                            <p class="text-dark-80">
+                                                <strong>✏️ 您的解答：</strong> 
+                                                <span class="{{ 'text-success' if answers[question.id] else 'text-muted' }}">
+                                                    {{ answers[question.id] or '尚未作答' }}
+                                                </span>
+                                            </p>
+                                        </div>
+                                    </div>
+                                </div>
+                            {% endfor %}
+                        </div>
+                        
+                        <div class="text-center mt-5">
+                            <a href="{{ url_for('index') }}" class="home-btn btn">
+                                🏠 返回首页
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <script type="module" crossorigin src="https://g.alicdn.com/aliyun-documentation/web-chatbot-ui/0.0.24/index.js"></script>
+    <script>
+      window.CHATBOT_CONFIG = {
+        endpoint: "/chat", // 可以替换为 https://{your-fc-http-trigger-domain}/chat
+        displayByDefault: false, // 默认不显示 AI 助手对话框
+        title: 'AI 助手', // 自定义 AI 助手标题
+        draggable: true, // 是否开启拖拽
+        aiChatOptions: { // 自定义取值参考：https://docs.nlkit.com/nlux/reference/ui/ai-chat#conversation-options
+          conversationOptions: { // 自定义取值参考：https://docs.nlkit.com/nlux/reference/ui/ai-chat#conversation-options
+            conversationStarters: [
+              {prompt: '我的多级认知能力水平如何?'},
+              {prompt: 'XX学生的多级认知能力水平怎么样?'},
+              {prompt: '“整体学生的多级认知能力水平如何?'},
+            ]
+          },
+          displayOptions: { // 自定义取值参考：https://docs.nlkit.com/nlux/reference/ui/ai-chat#display-options
+            height: 600,
+            // width: 400,
+          },
+          personaOptions: { // 自定义取值参考：https://docs.nlkit.com/nlux/reference/ui/ai-chat#chat-personas
+            assistant: {
+              name: '你好，我是你的 AI 助手',
+              // AI 助手的图标
+              avatar: 'https://img.alicdn.com/imgextra/i2/O1CN01Pda9nq1YDV0mnZ31H_!!6000000003025-54-tps-120-120.apng',
+              tagline: '您可以尝试点击下方的快捷入口开启体验！',
+            }
+          },
+          messageOptions: { // 自定义取值参考：https://docs.nlkit.com/nlux/reference/ui/ai-chat#message-options
+            waitTimeBeforeStreamCompletion: 'never'
+          }
+        },
+        dataProcessor: {
+          /**
+          * 在向后端大模型应用发起请求前改写 Prompt。
+          * 比如可以用于总结网页场景，在发送前将网页内容包含在内，同时避免在前端显示这些内容。
+          * @param {string} prompt - 用户输入的 Prompt
+          * @param {string}  - 改写后的 Prompt
+          */
+          rewritePrompt(prompt) {
+            return prompt;
+          }
+        }
+      };
+    </script>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.2.3/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

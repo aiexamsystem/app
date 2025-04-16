@@ -1,0 +1,375 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>智慧答题 - {{ student_type }}模式</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.2.3/css/bootstrap.min.css">
+    <style>
+        :root {
+            --primary-gradient: linear-gradient(135deg, #4A90E2 0%, #6C5CE7 100%);
+            --glass-bg: rgba(255, 255, 255, 0.96);
+        }
+
+        body {
+            background: var(--primary-gradient);
+            min-height: 100vh;
+            font-family: 'Segoe UI', system-ui, sans-serif;
+        }
+
+        /* 动态粒子背景 */
+        .particles {
+            position: fixed;
+            width: 100vw;
+            height: 100vh;
+            z-index: 0;
+            pointer-events: none;
+        }
+
+        .container {
+            position: relative;
+            z-index: 1;
+        }
+
+        /* 主答题卡 */
+        .quiz-container {
+            background: var(--glass-bg);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border-radius: 24px;
+            box-shadow: 0 20px 50px rgba(0, 0, 0, 0.15);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            overflow: hidden;
+        }
+
+        .quiz-header {
+            background: rgba(255,255,255,0.1);
+            border-bottom: 1px solid rgba(255,255,255,0.2);
+            padding: 2rem;
+        }
+
+        .quiz-header h3 {
+            font-weight: 800;
+            background: var(--primary-gradient);
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+            letter-spacing: -0.03em;
+        }
+
+        /* 题目卡片 */
+        .question-card {
+            background: rgba(255,255,255,0.9);
+            border-radius: 16px;
+            border: 1px solid rgba(108, 92, 231, 0.1);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+            transition: transform 0.3s ease;
+        }
+
+        .question-card:hover {
+            transform: translateY(-3px);
+        }
+
+        .question-header {
+            background: rgba(74, 144, 226, 0.05);
+            border-bottom: 1px solid rgba(74, 144, 226, 0.1);
+            padding: 1.5rem;
+        }
+
+        .question-header h5 {
+            color: #4A90E2;
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .question-header h5::before {
+            content: "📌";
+            font-size: 1.2em;
+        }
+
+        /* 输入框样式 */
+        .answer-input {
+            background: rgba(255,255,255,0.95);
+            border: 2px solid rgba(108, 92, 231, 0.15);
+            border-radius: 12px;
+            padding: 1.25rem;
+            transition: all 0.3s ease;
+        }
+
+        .answer-input:focus {
+            border-color: #6C5CE7;
+            box-shadow: 0 0 0 3px rgba(108, 92, 231, 0.2);
+        }
+
+        /* 按钮系统 */
+        .quiz-btn {
+            padding: 1rem 2.5rem;
+            border-radius: 12px;
+            font-weight: 600;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            position: relative;
+            overflow: hidden;
+            border: none;
+        }
+
+        .quiz-btn::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 200%;
+            height: 100%;
+            background: linear-gradient(
+                90deg,
+                rgba(255,255,255,0) 0%,
+                rgba(255,255,255,0.2) 50%,
+                rgba(255,255,255,0) 100%
+            );
+            transition: left 0.6s;
+        }
+
+        .quiz-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(74, 144, 226, 0.3);
+        }
+
+        .quiz-btn:hover::after {
+            left: 100%;
+        }
+
+        .submit-btn {
+            background: var(--primary-gradient);
+            color: white;
+        }
+
+        .return-btn {
+            background: rgba(255,255,255,0.9);
+            color: #4A90E2;
+            border: 1px solid rgba(74, 144, 226, 0.2);
+        }
+
+        /* 图片样式 */
+        .question-image {
+            border-radius: 12px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+            max-height: 300px;
+            object-fit: contain;
+            transition: transform 0.3s ease;
+            cursor: pointer;
+        }
+
+        .question-image:hover {
+            transform: scale(1.02);
+        }
+
+        /* 视频样式 */
+        .question-video {
+            border-radius: 12px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+            max-width: 100%;
+            cursor: pointer;
+        }
+
+        /* 图片/视频弹窗样式 */
+        .media-modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            padding-top: 50px;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            overflow: auto;
+            background-color: rgba(0, 0, 0, 0.9);
+        }
+
+        .modal-content {
+            margin: auto;
+            display: block;
+            max-width: 90%;
+            max-height: 90%;
+        }
+
+        .modal-video {
+            margin: auto;
+            display: block;
+            max-width: 90%;
+            max-height: 80vh;
+        }
+
+        .close {
+            position: absolute;
+            top: 15px;
+            right: 35px;
+            color: #f1f1f1;
+            font-size: 40px;
+            font-weight: bold;
+            transition: 0.3s;
+            z-index: 1001;
+        }
+
+        .close:hover,
+        .close:focus {
+            color: #bbb;
+            text-decoration: none;
+            cursor: pointer;
+        }
+
+        /* 移动端优化 */
+        @media (max-width: 768px) {
+            .quiz-container {
+                margin: 1rem;
+            }
+            .quiz-header h3 {
+                font-size: 1.8rem;
+            }
+            .quiz-btn {
+                width: 100%;
+                margin: 0.5rem 0;
+            }
+            .modal-content, .modal-video {
+                max-width: 95%;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- 动态粒子背景 -->
+    <div class="particles"></div>
+
+    <!-- 图片弹窗 -->
+    <div id="imageModal" class="media-modal">
+        <span class="close">&times;</span>
+        <img class="modal-content" id="modalImage">
+    </div>
+
+    <!-- 视频弹窗 -->
+    <div id="videoModal" class="media-modal">
+        <span class="close">&times;</span>
+        <video class="modal-video" id="modalVideo" controls></video>
+    </div>
+
+    <div class="container mt-4">
+        <div class="row justify-content-center">
+            <div class="col-md-10 col-lg-8">
+                <div class="quiz-container">
+                    <div class="quiz-header text-center">
+                        <h3>{{ student_type }}知识挑战</h3>
+                    </div>
+                    <div class="card-body p-4">
+                        <form action="{{ url_for('submit_quiz') }}" method="post">
+                            {% for question in questions %}
+                                <div class="question-card mb-4">
+                                    <div class="question-header">
+                                        <h5>第 {{ loop.index }} 题</h5>
+                                    </div>
+                                    <div class="card-body">
+                                        <p class="fs-5 mb-4">{{ question.content }}</p>
+                                        
+                                        {% if question.image %}
+                                            <div class="text-center mb-4">
+                                                <img src="{{ url_for('static', filename=question.image) }}" 
+                                                     alt="题目图示" 
+                                                     class="question-image"
+                                                     onclick="openImageModal(this.src)">
+                                            </div>
+                                        {% endif %}
+                                        
+                                        {% if question.video %}
+                                            <div class="text-center mb-4">
+                                                <video class="question-video" controls width="100%" onclick="openVideoModal(this.src)">
+                                                    <source src="{{ url_for('static', filename=question.video) }}" type="video/mp4">
+                                                    您的浏览器不支持视频播放。
+                                                </video>
+                                            </div>
+                                        {% endif %}
+                                        
+                                        <div class="mb-3">
+                                            <label for="answer_{{ question.id }}" class="form-label fw-bold text-dark-80">✍️ 填写答案</label>
+                                            <textarea class="answer-input form-control" 
+                                                      id="answer_{{ question.id }}" 
+                                                      name="answer_{{ question.id }}" 
+                                                      rows="3"
+                                                      placeholder="请在此输入您的解答..."></textarea>
+                                        </div>
+                                    </div>
+                                </div>
+                            {% endfor %}
+                            
+                            <div class="text-center mt-5">
+                                <button type="submit" class="quiz-btn submit-btn px-5">🚀 提交答案</button>
+                                <a href="{{ url_for('student') }}" class="quiz-btn return-btn px-5 ms-2">← 返回选择</a>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 粒子动画 -->
+    <script>
+        function createParticles() {
+            const container = document.querySelector('.particles');
+            for(let i = 0; i < 40; i++) {
+                const particle = document.createElement('div');
+                particle.style.cssText = `
+                    position: absolute;
+                    background: rgba(255,255,255,0.3);
+                    width: ${Math.random() * 4 + 2}px;
+                    height: ${Math.random() * 4 + 2}px;
+                    border-radius: 50%;
+                    animation: float ${Math.random() * 6 + 4}s infinite ease-in-out;
+                    top: ${Math.random() * 100}%;
+                    left: ${Math.random() * 100}%;
+                `;
+                container.appendChild(particle);
+            }
+        }
+        createParticles();
+
+        // 图片弹窗功能
+        const imageModal = document.getElementById("imageModal");
+        const modalImage = document.getElementById("modalImage");
+        const videoModal = document.getElementById("videoModal");
+        const modalVideo = document.getElementById("modalVideo");
+
+        function openImageModal(src) {
+            imageModal.style.display = "block";
+            modalImage.src = src;
+        }
+
+        function openVideoModal(src) {
+            videoModal.style.display = "block";
+            modalVideo.src = src;
+            modalVideo.play();
+        }
+
+        // 关闭弹窗
+        const spans = document.getElementsByClassName("close");
+        for (let i = 0; i < spans.length; i++) {
+            spans[i].onclick = function() {
+                imageModal.style.display = "none";
+                videoModal.style.display = "none";
+                if (modalVideo.src) {
+                    modalVideo.pause();
+                }
+            }
+        }
+
+        // 点击弹窗外部关闭弹窗
+        window.onclick = function(event) {
+            if (event.target == imageModal) {
+                imageModal.style.display = "none";
+            }
+            if (event.target == videoModal) {
+                videoModal.style.display = "none";
+                modalVideo.pause();
+            }
+        }
+    </script>
+</body>
+</html>
